@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => 'core',
 
     /*
     |--------------------------------------------------------------------------
@@ -43,15 +43,35 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
-        'mysql' => [
+        'core' => [
             'driver' => 'mysql',
-            'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
-            'unix_socket' => env('DB_SOCKET', ''),
+            'url' => env('CORE_DATABASE_URL'),
+            'host' => env('CORE_DB_HOST', '127.0.0.1'),
+            'port' => env('CORE_DB_PORT', '3306'),
+            'database' => env('CORE_DB_DATABASE', 'czqocore'),
+            'username' => env('CORE_DB_USERNAME', 'root'),
+            'password' => env('CORE_DB_PASSWORD', ''),
+            'unix_socket' => env('CORE_DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'web' => [
+            'driver' => 'mysql',
+            'url' => env('WEB_DATABASE_URL'),
+            'host' => env('WEB_DB_HOST', '127.0.0.1'),
+            'port' => env('WEB_DB_PORT', '3306'),
+            'database' => env('WEB_DB_DATABASE', 'czqoweb'),
+            'username' => env('WEB_DB_USERNAME', 'root'),
+            'password' => env('WEB_DB_PASSWORD', ''),
+            'unix_socket' => env('WEB_DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
