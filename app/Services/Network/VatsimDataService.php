@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class VatsimDataService
 {
-    const NETWORK_DATA_URL = 'https://data.vatsim.net/v3/vatsim-data.json';
+    const NETWORK_DATA_URL = 'https://cdn.discordapp.com/attachments/882531763983896599/893456176174477373/vatsim-data.json';
     private $callsignsToMatch;
 
     public function __construct()
@@ -39,14 +39,14 @@ class VatsimDataService
         }
 
         // Process controller clients
-        $concernedControllers = $this->formatControllerData($networkResponse);
-        foreach ($concernedControllers as $controller) {
+        $newControllers = $this->formatNewControllerData($networkResponse);
+        foreach ($newControllers as $controller) {
             Log::info($controller);
         }
-        $this->processControllers($concernedControllers);
+        $this->processNewControllers($newControllers);
     }
 
-    private function formatControllerData(Response $response): Collection
+    private function formatNewControllerData(Response $response): Collection
     {
         $controllerData = $this->filterControllerData(new Collection($response->json('controllers', '[]')));
         return $controllerData->map(function (array $controller) {
@@ -57,13 +57,14 @@ class VatsimDataService
     private function filterControllerData(Collection $controllerData): Collection
     {
         return $controllerData->filter(function (array $controller) {
-            return in_array($controller['callsign'], $this->callsignsToMatch);
+            return in_array($controller['callsign'], $this->callsignsToMatch) && VatsimControllerSession::wherePositionId(VatsimLogonPosition::find($controller['callsign']))->whereLogoffTime(null)->doesntExist();
         });
     }
 
     private function formatController(array $controller): array
     {
         return [
+            'id' => Str::uuid(),
             'position_id' => VatsimLogonPosition::where('callsign', $controller['callsign'])->first()->id,
             'cid' => $controller['cid'],
             'frequency' => $controller['frequency'],
@@ -72,11 +73,10 @@ class VatsimDataService
         ];
     }
 
-    private function processControllers(Collection $controllers): void
+    private function processNewControllers(Collection $controllers): void
     {
-        VatsimControllerSession::updateOrCreate(
-            ['id' => Str::uuid()],
-            $controllers->toArray()
+        VatsimControllerSession::upsert(
+            $controllers->toArray(), ['position_id']
         );
     }
 }
