@@ -24,6 +24,13 @@ class VatsimLogonPositionsController extends Controller
         );
     }
 
+    public function getPosition(VatsimLogonPosition $vatsimLogonPosition): JsonResponse
+    {
+        return $this->success(
+            $this->vatsimLogonPositionService->getPosition($vatsimLogonPosition)
+        );
+    }
+
     public function getSessionsForPosition(VatsimLogonPosition $vatsimLogonPosition): JsonResponse
     {
         return $this->success(

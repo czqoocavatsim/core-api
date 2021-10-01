@@ -8,7 +8,12 @@ class VatsimLogonPositionService
 {
     public function getAll()
     {
-        return VatsimLogonPosition::all();
+        return VatsimLogonPosition::all()->makeHidden(['id', 'updated_at', 'created_at']);
+    }
+
+    public function getPosition(VatsimLogonPosition $position)
+    {
+        return $position->setHidden(['id', 'updated_at', 'created_at'])->setAttribute('sessions', route('network.position.sessions', $position));
     }
 
     public function getSessionsForPosition(VatsimLogonPosition $position)

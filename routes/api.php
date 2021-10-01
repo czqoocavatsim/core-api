@@ -27,7 +27,8 @@ Route::prefix('network')->name('network.')->group(function () {
 
     Route::prefix('position')->name('position')->group(function () {
         Route::get('/all', [VatsimLogonPositionsController::class, 'getAll']);
-        Route::get('/{vatsimLogonPosition:callsign}/sessions', [VatsimLogonPositionsController::class, 'getSessionsForPosition'])->name('sessions');
+        Route::get('/{vatsimLogonPosition}', [VatsimLogonPositionsController::class, 'getPosition'])->name('.get');
+        Route::get('/{vatsimLogonPosition}/sessions', [VatsimLogonPositionsController::class, 'getSessionsForPosition'])->name('.sessions');
     });
 
 });
