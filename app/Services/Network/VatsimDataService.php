@@ -15,11 +15,14 @@ use Illuminate\Support\Str;
 class VatsimDataService
 {
     const NETWORK_DATA_URL = 'https://cdn.discordapp.com/attachments/882531763983896599/893456176174477373/vatsim-data.json';
+    //const NETWORK_DATA_URL = "https://data.vatsim.net/v3/vatsim-data.json";
     private $callsignsToMatch;
 
     public function __construct()
     {
-        $this->callsignsToMatch = VatsimLogonPosition::all()->pluck('callsign')->toArray();
+        $this->callsignsToMatch = VatsimLogonPosition::all()->filter(function ($position) {
+            return VatsimControllerSession::wherePositionId(VatsimLogonPosition::find($position->id)->id)->whereLogoffTime(null)->doesntExist();
+        })->pluck('callsign')->toArray();
     }
 
     public function updateNetworkData(): void
@@ -38,26 +41,20 @@ class VatsimDataService
             return;
         }
 
-        // Process controller clients
-        $newControllers = $this->formatNewControllerData($networkResponse);
-        foreach ($newControllers as $controller) {
-            Log::info($controller);
-        }
-        $this->processNewControllers($newControllers);
+        // Format data
+        $formattedControllers = $this->formatControllerData($networkResponse);
+
+        // Process *new* controller clients
+        $this->processNewControllers($formattedControllers);
+
+        // Process logoffs
+        $this->processControllerLogoffs($formattedControllers);
     }
 
-    private function formatNewControllerData(Response $response): Collection
+    private function formatControllerData(Collection $controllerData): Collection
     {
-        $controllerData = $this->filterControllerData(new Collection($response->json('controllers', '[]')));
         return $controllerData->map(function (array $controller) {
             return $this->formatController($controller);
-        });
-    }
-
-    private function filterControllerData(Collection $controllerData): Collection
-    {
-        return $controllerData->filter(function (array $controller) {
-            return in_array($controller['callsign'], $this->callsignsToMatch) && VatsimControllerSession::wherePositionId(VatsimLogonPosition::find($controller['callsign']))->whereLogoffTime(null)->doesntExist();
         });
     }
 
@@ -65,7 +62,7 @@ class VatsimDataService
     {
         return [
             'id' => Str::uuid(),
-            'position_id' => VatsimLogonPosition::where('callsign', $controller['callsign'])->first()->id,
+            'position_id' => VatsimLogonPosition::where('callsign', $controller['callsign'])->first()->id ?? null,
             'cid' => $controller['cid'],
             'frequency' => $controller['frequency'],
             'logon_time' => Carbon::parse($controller['logon_time']),
@@ -73,10 +70,34 @@ class VatsimDataService
         ];
     }
 
-    private function processNewControllers(Collection $controllers): void
+    private function filterNewControllers(Collection $controllerData): Collection
     {
-        VatsimControllerSession::upsert(
-            $controllers->toArray(), ['position_id']
-        );
+        return $controllerData->filter(function (array $controller) {
+            return in_array($controller['callsign'], $this->callsignsToMatch);
+        });
+    }
+
+    private function processNewControllers(Collection $input): void
+    {
+        $controllers = $this->filterNewControllers($input);
+        foreach ($controllers as $controller) {
+            VatsimControllerSession::create($controller);
+        }
+    }
+
+    private function processControllerLogoffs(Collection $controllers): void
+    {
+        $activeSessions = VatsimControllerSession::whereLogoffTime(null)->get();
+
+        if ($controllers->empty()){
+            foreach ($activeSessions as $session) {
+                $session->logoff_time = now();
+                $session->save();
+            }
+        }
+        foreach (
+            $activeSessions as $session) {
+            dd($controllers->contains('position_id', $session->position_id));
+        }
     }
 }
