@@ -37,6 +37,10 @@ class VatsimLogonPosition extends Model
         'type' => LogonPositionType::class
     ];
 
+    protected $hidden = [
+        'id', 'created_at', 'updated_at'
+    ];
+
     /**
      * Return the controller sessions for this logon position.
      *

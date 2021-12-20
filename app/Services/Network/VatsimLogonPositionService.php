@@ -18,6 +18,10 @@ class VatsimLogonPositionService
 
     public function getSessionsForPosition(VatsimLogonPosition $position)
     {
-        return $position->controllerSessions;
+        $sessions = $position->controllerSessions;
+        foreach ($sessions as $session) {
+            $session->setAttribute('url', route('network.session.get', $session));
+        }
+        return $sessions;
     }
 }
